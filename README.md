@@ -7,6 +7,7 @@ Built on Azure AI SpeechServices and OpenAI's GPT4o, MeetMate combines cutting-e
 ## Key Features
 
 - 🎤 **Real-Time Transcription**: Accurately transcribe meetings, with complete speaker diarization.
+- 🔴 **Live Microphone Recording**: Record meetings in real-time directly from your microphone with instant transcription.
 - 📄 **Minutes of Meeting Generator**: Generate concise and professional MoM documents, from just your recording.
 - 🗓️ **Follow-Up Meetings Schedule**: Automatically schedule follow-ups and future meetings into your Google Calendar.
 
@@ -26,9 +27,10 @@ MeetMate is hosted at: https://meetmatefinal.onrender.com/
 ### **HOW TO USE:**
 
 1. **Upload Meeting Recording**: Provide the meeting recording, and MeetMate will analyse it in seconds.
-2. **Get Real-Time Insights**: View transcriptions, action items, and key points during the meeting.
-3. **Generate MoM**: Receive a professional MoM document post-meeting.
-4. **Organize Follow-Ups**: Automatically schedule follow-ups based on meeting discussions in your Google Calendar.
+2. **OR Record Live**: Click "Start Recording" to record meetings in real-time with your microphone.
+3. **Get Real-Time Insights**: View transcriptions, action items, and key points during the meeting.
+4. **Generate MoM**: Receive a professional MoM document post-meeting.
+5. **Organize Follow-Ups**: Automatically schedule follow-ups based on meeting discussions in your Google Calendar.
 
 ## Demo Video
 [![Watch the video](https://img.youtube.com/vi/KAbtrxh1IVg/maxresdefault.jpg)](https://youtu.be/KAbtrxh1IVg)
