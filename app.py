@@ -342,7 +342,7 @@ def start_recording():
         return jsonify(result)
     except Exception as e:
         logging.error(f"Error starting recording: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Failed to start recording"}), 500
 
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
@@ -353,7 +353,7 @@ def stop_recording():
         return jsonify(result)
     except Exception as e:
         logging.error(f"Error stopping recording: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Failed to stop recording"}), 500
 
 @app.route('/get_realtime_transcript', methods=['GET'])
 def get_realtime_transcript():
@@ -369,7 +369,7 @@ def get_realtime_transcript():
         })
     except Exception as e:
         logging.error(f"Error getting transcript: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Failed to retrieve transcript"}), 500
 
 @app.route('/process_recording', methods=['POST'])
 def process_recording():
@@ -431,7 +431,7 @@ def process_recording():
             
     except Exception as e:
         logging.error(f"Error processing recording: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Failed to process recording"}), 500
 
 if __name__ == '__main__':
     app.run()
