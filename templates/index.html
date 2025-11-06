@@ -295,7 +295,13 @@
                     
                     // Update transcript with final results
                     if (data.transcript) {
-                        transcriptDiv.innerHTML = '<pre style="white-space: pre-line; font-family: \'Meutas\', sans-serif; font-weight: normal;">' + data.transcript + '</pre>';
+                        const pre = document.createElement('pre');
+                        pre.style.whiteSpace = 'pre-line';
+                        pre.style.fontFamily = "'Meutas', sans-serif";
+                        pre.style.fontWeight = 'normal';
+                        pre.textContent = data.transcript;
+                        transcriptDiv.innerHTML = '';
+                        transcriptDiv.appendChild(pre);
                     }
                 }
             } catch (error) {
@@ -370,7 +376,14 @@
                     }
                     
                     if (transcript) {
-                        transcriptDiv.innerHTML = '<pre style="white-space: pre-line; font-family: \'Meutas\', sans-serif; font-weight: normal;">' + transcript + '</pre>';
+                        // Use textContent to prevent XSS
+                        const pre = document.createElement('pre');
+                        pre.style.whiteSpace = 'pre-line';
+                        pre.style.fontFamily = "'Meutas', sans-serif";
+                        pre.style.fontWeight = 'normal';
+                        pre.textContent = transcript;
+                        transcriptDiv.innerHTML = '';
+                        transcriptDiv.appendChild(pre);
                         // Auto-scroll to bottom
                         transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                     }

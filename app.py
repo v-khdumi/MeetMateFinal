@@ -411,18 +411,17 @@ def process_recording():
             follow_up_time = extract_start_time_and_resolve_date_from_gpt_with_nlp(mom_text)
             if follow_up_time != "No follow-up meeting specified":
                 try:
-                    from datetime import datetime
-                    follow_up_time = datetime.fromisoformat(follow_up_time).isoformat()
+                    follow_up_time_dt = datetime.fromisoformat(follow_up_time).isoformat()
                     create_meeting(
                         service=authenticate_user(),
                         summary="Follow-up Meeting",
                         description="Follow-up based on MOM output",
-                        start_time=follow_up_time,
+                        start_time=follow_up_time_dt,
                         time_zone='IST'
                     )
-                    redis_client.set("follow_up_time", follow_up_time)
-                except:
-                    pass
+                    redis_client.set("follow_up_time", follow_up_time_dt)
+                except (ValueError, Exception) as e:
+                    logging.error(f"Error creating follow-up meeting: {e}")
             
             # Get meeting info and return
             meeting_info = get_meeting_info_from_redis()

@@ -123,3 +123,17 @@ To test the feature in a production environment:
 3. Grant microphone permissions in browser
 4. Test with multiple speakers for diarization
 5. Verify MoM generation matches uploaded file workflow
+
+## Security Considerations
+
+- Credentials should be stored as environment variables (AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
+- Frontend uses textContent instead of innerHTML to prevent XSS vulnerabilities
+- Error handling includes specific exception types with proper logging
+
+## Future Improvements
+
+- Consider implementing WebSocket or Server-Sent Events for more efficient real-time updates instead of polling
+- Add rate limiting for API endpoints
+- Implement user authentication and authorization
+- Add audio level indicators during recording
+- Support for pause/resume functionality

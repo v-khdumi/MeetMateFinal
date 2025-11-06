@@ -4,12 +4,13 @@ from datetime import datetime
 from upstash_redis import Redis
 import os
 
-UPSTASH_REDIS_REST_URL = "https://fine-swift-52766.upstash.io"
-UPSTASH_REDIS_REST_TOKEN = "Ac4eAAIjcDE2NzI4ZmMzYmU1NmU0NmM3ODIxY2YzYWI2ZTAyMzdhNXAxMA"
+# Load credentials from environment variables
+UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://fine-swift-52766.upstash.io")
+UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "Ac4eAAIjcDE2NzI4ZmMzYmU1NmU0NmM3ODIxY2YzYWI2ZTAyMzdhNXAxMA")
 redis_client = Redis(url=UPSTASH_REDIS_REST_URL, token=UPSTASH_REDIS_REST_TOKEN)
 
-subscription_key = "7D6sNCVfG0raLGtt31oF5fEtyu7FOkT521wmvwR9LMlWmc3rhNNyJQQJ99ALACHYHv6XJ3w3AAAAACOGvMWd"
-service_region = "eastus2"
+subscription_key = os.getenv("AZURE_SPEECH_KEY", "7D6sNCVfG0raLGtt31oF5fEtyu7FOkT521wmvwR9LMlWmc3rhNNyJQQJ99ALACHYHv6XJ3w3AAAAACOGvMWd")
+service_region = os.getenv("AZURE_SPEECH_REGION", "eastus2")
 
 class RealtimeRecorder:
     def __init__(self):
