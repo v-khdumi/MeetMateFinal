@@ -10,6 +10,8 @@ import re
 from io import BytesIO
 from upstash_redis import Redis
 from docx import Document
+from realtime_recording import get_recorder
+from datetime import datetime
 
 UPSTASH_REDIS_REST_URL="https://fine-swift-52766.upstash.io"
 UPSTASH_REDIS_REST_TOKEN = "Ac4eAAIjcDE2NzI4ZmMzYmU1NmU0NmM3ODIxY2YzYWI2ZTAyMzdhNXAxMA"
@@ -330,6 +332,107 @@ def process():
             "error": str(e),
             "status": "error"
         })
+
+@app.route('/start_recording', methods=['POST'])
+def start_recording():
+    """Start real-time microphone recording"""
+    try:
+        recorder = get_recorder()
+        result = recorder.start_recording()
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Error starting recording: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/stop_recording', methods=['POST'])
+def stop_recording():
+    """Stop recording and get transcript"""
+    try:
+        recorder = get_recorder()
+        result = recorder.stop_recording()
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Error stopping recording: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/get_realtime_transcript', methods=['GET'])
+def get_realtime_transcript():
+    """Get current real-time transcription"""
+    try:
+        results = redis_client.get("realtime-results")
+        interim = redis_client.get("realtime-interim")
+        
+        return jsonify({
+            "results": json.loads(results) if results else [],
+            "interim": json.loads(interim) if interim else {},
+            "status": "success"
+        })
+    except Exception as e:
+        logging.error(f"Error getting transcript: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/process_recording', methods=['POST'])
+def process_recording():
+    """Process the recorded audio and generate MoM"""
+    try:
+        # Get the transcript from Redis
+        transcript = redis_client.get("realtime-transcript")
+        if not transcript:
+            return jsonify({"error": "No recording transcript available"}), 400
+        
+        # Store as diarized output
+        redis_client.set("diarised-output", transcript)
+        
+        # Get current DateTime for MOM
+        datetime_now = datetime.now().strftime("%Y-%m-%d %I:%M %p")
+        
+        # Count speakers
+        speakers = redis_client.get("realtime-results")
+        num_attendees = 0
+        if speakers:
+            results = json.loads(speakers)
+            unique_speakers = set([r.get('speaker', 'Unknown') for r in results])
+            num_attendees = len(unique_speakers)
+        
+        redis_client.set("num_attendees", num_attendees)
+        
+        # Import necessary functions from diarize_MOM
+        from diarize_MOM import generate_mom_with_gpt, extract_start_time_and_resolve_date_from_gpt_with_nlp
+        from cal1 import create_meeting, authenticate_user
+        
+        # Generate MoM
+        mom_text = generate_mom_with_gpt(transcript, datetime_now, num_attendees)
+        
+        if mom_text:
+            # Save MOM text to Redis
+            redis_client.set("minutes_of_meeting", mom_text)
+            
+            # Extract follow-up time
+            follow_up_time = extract_start_time_and_resolve_date_from_gpt_with_nlp(mom_text)
+            if follow_up_time != "No follow-up meeting specified":
+                try:
+                    from datetime import datetime
+                    follow_up_time = datetime.fromisoformat(follow_up_time).isoformat()
+                    create_meeting(
+                        service=authenticate_user(),
+                        summary="Follow-up Meeting",
+                        description="Follow-up based on MOM output",
+                        start_time=follow_up_time,
+                        time_zone='IST'
+                    )
+                    redis_client.set("follow_up_time", follow_up_time)
+                except:
+                    pass
+            
+            # Get meeting info and return
+            meeting_info = get_meeting_info_from_redis()
+            return jsonify({"status": "success", "meeting_info": meeting_info})
+        else:
+            return jsonify({"error": "Failed to generate Minutes of Meeting"}), 500
+            
+    except Exception as e:
+        logging.error(f"Error processing recording: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run()

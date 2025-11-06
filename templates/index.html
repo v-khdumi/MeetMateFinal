@@ -100,6 +100,24 @@
                         <input type="submit" value="Upload" id="upload-form" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 cursor-pointer" style="font-family: 'Meutas', sans-serif; font-weight: normal;">
                     </form>
                 </div>
+                
+                <!-- Real-time Recording Section -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold text-gray-300 mb-4" style="font-family: 'Meutas', sans-serif; font-weight: bold;">Record Meeting (Real-time)</h2>
+                    <div class="flex gap-2 mb-4">
+                        <button id="start-recording" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 cursor-pointer" style="font-family: 'Meutas', sans-serif; font-weight: normal;">
+                            🎤 Start Recording
+                        </button>
+                        <button id="stop-recording" class="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 cursor-pointer" disabled style="font-family: 'Meutas', sans-serif; font-weight: normal;">
+                            ⏹️ Stop Recording
+                        </button>
+                    </div>
+                    <button id="process-recording" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 cursor-pointer hidden" style="font-family: 'Meutas', sans-serif; font-weight: normal;">
+                        Generate Minutes
+                    </button>
+                    <div id="recording-status" class="mt-2 text-sm text-gray-400"></div>
+                </div>
+                
                 <!-- Processing Status -->
                 <div id="processing-status" class="flex items-center gap-2 mb-6 hidden">
                     <div class="spinner" id="spinner"></div>
@@ -196,6 +214,170 @@
         if (performance.navigation.type === 1) {
             // Redirect to home page on refresh
             window.location.href = '/';
+        }
+
+        // Real-time recording functionality
+        const startRecordingBtn = document.getElementById('start-recording');
+        const stopRecordingBtn = document.getElementById('stop-recording');
+        const processRecordingBtn = document.getElementById('process-recording');
+        const recordingStatus = document.getElementById('recording-status');
+        const transcriptDiv = document.getElementById('transcript');
+        
+        let recordingInterval = null;
+        let isRecording = false;
+
+        startRecordingBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/start_recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'started') {
+                    isRecording = true;
+                    startRecordingBtn.disabled = true;
+                    startRecordingBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
+                    startRecordingBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    
+                    stopRecordingBtn.disabled = false;
+                    stopRecordingBtn.classList.remove('bg-gray-600');
+                    stopRecordingBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    
+                    recordingStatus.textContent = '🔴 Recording in progress...';
+                    recordingStatus.classList.add('text-red-400');
+                    
+                    // Start polling for real-time transcription
+                    recordingInterval = setInterval(updateRealtimeTranscript, 2000);
+                } else {
+                    recordingStatus.textContent = '❌ Failed to start recording';
+                    recordingStatus.classList.add('text-red-400');
+                }
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                recordingStatus.textContent = '❌ Error starting recording';
+                recordingStatus.classList.add('text-red-400');
+            }
+        });
+
+        stopRecordingBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/stop_recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'stopped') {
+                    isRecording = false;
+                    clearInterval(recordingInterval);
+                    
+                    startRecordingBtn.disabled = false;
+                    startRecordingBtn.classList.remove('bg-gray-600', 'cursor-not-allowed');
+                    startRecordingBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    
+                    stopRecordingBtn.disabled = true;
+                    stopRecordingBtn.classList.add('bg-gray-600');
+                    stopRecordingBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    
+                    recordingStatus.textContent = '✅ Recording stopped. ' + data.speakers + ' speaker(s) detected.';
+                    recordingStatus.classList.remove('text-red-400');
+                    recordingStatus.classList.add('text-green-400');
+                    
+                    // Show the process button
+                    processRecordingBtn.classList.remove('hidden');
+                    
+                    // Update transcript with final results
+                    if (data.transcript) {
+                        transcriptDiv.innerHTML = '<pre style="white-space: pre-line; font-family: \'Meutas\', sans-serif; font-weight: normal;">' + data.transcript + '</pre>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error stopping recording:', error);
+                recordingStatus.textContent = '❌ Error stopping recording';
+            }
+        });
+
+        processRecordingBtn.addEventListener('click', async () => {
+            processingStatus.classList.remove('hidden');
+            processingText.textContent = 'Generating Minutes of Meeting...';
+            spinner.classList.remove('hidden');
+            processRecordingBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/process_recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Reload page with meeting info
+                    const meetingInfoJson = JSON.stringify(data.meeting_info);
+                    window.location.href = '/?meeting_info=' + encodeURIComponent(meetingInfoJson);
+                } else {
+                    processingText.textContent = '❌ Failed to generate MoM';
+                    processingText.classList.add('text-red-400');
+                }
+            } catch (error) {
+                console.error('Error processing recording:', error);
+                processingText.textContent = '❌ Error processing recording';
+                processingText.classList.add('text-red-400');
+            }
+        });
+
+        async function updateRealtimeTranscript() {
+            if (!isRecording) return;
+            
+            try {
+                const response = await fetch('/get_realtime_transcript');
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.results && data.results.length > 0) {
+                    let transcript = '';
+                    const speakerMap = {};
+                    let speakerCounter = 1;
+                    
+                    data.results.forEach(result => {
+                        if (result.type === 'final' && result.text) {
+                            const speakerId = result.speaker || 'Unknown';
+                            
+                            if (!speakerMap[speakerId]) {
+                                speakerMap[speakerId] = 'Speaker ' + speakerCounter;
+                                speakerCounter++;
+                            }
+                            
+                            transcript += '[' + speakerMap[speakerId] + ']\n' + result.text + '\n\n';
+                        }
+                    });
+                    
+                    // Add interim results if available
+                    if (data.interim && data.interim.text) {
+                        const speakerId = data.interim.speaker || 'Unknown';
+                        if (!speakerMap[speakerId]) {
+                            speakerMap[speakerId] = 'Speaker ' + speakerCounter;
+                        }
+                        transcript += '[' + speakerMap[speakerId] + ' - speaking...]\n' + data.interim.text + '\n\n';
+                    }
+                    
+                    if (transcript) {
+                        transcriptDiv.innerHTML = '<pre style="white-space: pre-line; font-family: \'Meutas\', sans-serif; font-weight: normal;">' + transcript + '</pre>';
+                        // Auto-scroll to bottom
+                        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+                    }
+                }
+            } catch (error) {
+                console.error('Error getting real-time transcript:', error);
+            }
         }
     </script>
 </body>
